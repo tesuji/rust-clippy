@@ -30,10 +30,7 @@ before_install:
     case "$TRAVIS_OS_NAME" in
       linux ) HOST=x86_64-unknown-linux-gnu;;
       osx ) HOST=x86_64-apple-darwin;;
-      windows )
-        HOST=x86_64-pc-windows-msvc
-        export HOST_TOOLCHAIN="$HOST"
-        ;;
+      windows ) HOST=x86_64-pc-windows-msvc;;
     esac
   - curl -sSL https://sh.rustup.rs | sh -s -- -y --default-host="$HOST" --default-toolchain=nightly --profile=minimal
   - export PATH="$HOME/.cargo/bin:$PATH"
