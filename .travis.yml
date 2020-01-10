@@ -78,6 +78,7 @@ before_script:
 
 script:
   - |
+    git remote -vv
     if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
       set -e
       if [[ -z ${INTEGRATION} ]]; then
