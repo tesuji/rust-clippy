@@ -62,77 +62,8 @@ matrix:
   include:
     # Builds that are executed for every PR
     - os: linux
-    # i686 toolchain could run on x86_64 system.
-    - os: linux
-      env: HOST_TOOLCHAIN=i686-unknown-linux-gnu
-      addons:
-        apt:
-          packages:
-            - gcc-multilib
-            - libssl-dev:i386     # openssl dev in Cargo.toml
-      if: branch IN (auto, try)
-    - os: windows
-      env: CARGO_INCREMENTAL=0 OS_WINDOWS=true
-
-    # Builds that are only executed when a PR is r+ed or a try build is started
-    # We don't want to run these always because they go towards
-    # the build limit within the Travis rust-lang account.
-    # The jobs are approximately sorted by execution time
-    - os: osx
-      if: branch IN (auto, try)
-    - env: INTEGRATION=rust-lang/rls
-      if: repo =~ /^rust-lang\/rust-clippy$/ AND branch IN (auto, try)
-    - env: INTEGRATION=rust-lang/cargo
-      if: repo =~ /^rust-lang\/rust-clippy$/ AND branch IN (auto, try)
-    - env: INTEGRATION=rust-lang/chalk
-      if: repo =~ /^rust-lang\/rust-clippy$/ AND branch IN (auto, try)
-    - env: INTEGRATION=Geal/nom
-      if: repo =~ /^rust-lang\/rust-clippy$/ AND branch IN (auto, try)
-    - env: INTEGRATION=rust-lang/rustfmt
-      if: repo =~ /^rust-lang\/rust-clippy$/ AND branch IN (auto, try)
-    - env: INTEGRATION=hyperium/hyper
-      if: repo =~ /^rust-lang\/rust-clippy$/ AND branch IN (auto, try)
-    - env: INTEGRATION=rust-itertools/itertools
-      if: repo =~ /^rust-lang\/rust-clippy$/ AND branch IN (auto, try)
-    # FIXME: rustc ICE on `serde_test_suite`
-    # - env: INTEGRATION=serde-rs/serde
-    #   if: repo =~ /^rust-lang\/rust-clippy$/ AND branch IN (auto, try)
-    - env: INTEGRATION=rust-lang/stdarch
-      if: repo =~ /^rust-lang\/rust-clippy$/ AND branch IN (auto, try)
-    - env: INTEGRATION=rust-random/rand
-      if: repo =~ /^rust-lang\/rust-clippy$/ AND branch IN (auto, try)
-    - env: INTEGRATION=rust-lang/futures-rs
-      if: repo =~ /^rust-lang\/rust-clippy$/ AND branch IN (auto, try)
-    - env: INTEGRATION=Marwes/combine
-      if: repo =~ /^rust-lang\/rust-clippy$/ AND branch IN (auto, try)
-    - env: INTEGRATION=rust-lang-nursery/failure
-      if: repo =~ /^rust-lang\/rust-clippy$/ AND branch IN (auto, try)
-    - env: INTEGRATION=rust-lang/log
-      if: repo =~ /^rust-lang\/rust-clippy$/ AND branch IN (auto, try)
-    - env: INTEGRATION=chronotope/chrono
-      if: repo =~ /^rust-lang\/rust-clippy$/ AND branch IN (auto, try)
-  allow_failures:
-    - os: windows
-      env: CARGO_INCREMENTAL=0 OS_WINDOWS=true
 
 before_script:
-  - |
-    if [[ "$TRAVIS_BRANCH" == "auto" ]] || [[ "$TRAVIS_BRANCH" == "try" ]]; then
-      PR=$(echo "$TRAVIS_COMMIT_MESSAGE" | grep -o "#[0-9]*" | head -1 | sed 's/^#//g')
-      output=$(curl -H "Authorization: token $GITHUB_API_TOKEN" -s "https://api.github.com/repos/rust-lang/rust-clippy/pulls/$PR" | \
-        python -c "import sys, json; print(json.load(sys.stdin)['body'])" | \
-        grep "^changelog: " | \
-        sed "s/changelog: //g")
-      if [[ -z "$output" ]]; then
-        echo "ERROR: PR body must contain 'changelog: ...'"
-        exit 1
-      elif [[ "$output" = "none" ]]; then
-        echo "WARNING: changelog is 'none'"
-      fi
-    fi
-  - |
-    rm rust-toolchain
-    ./setup-toolchain.sh
   - |
     SYSROOT=$(rustc --print sysroot)
     case "$TRAVIS_OS_NAME" in
@@ -147,18 +78,10 @@ before_script:
 
 script:
   - |
-    if [[ -n ${INTEGRATION} ]]; then
-      cargo test --test integration --features integration && sleep 5
-    else
-      ./ci/base-tests.sh && sleep 5
-    fi
-
-after_success:
-  - |
     if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
       set -e
       if [[ -z ${INTEGRATION} ]]; then
-        ./.github/deploy.sh
+        ./.github/deploy.sh || sleep 5
       else
         echo "Not deploying, because we're in an integration test run"
       fi
