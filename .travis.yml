@@ -11,14 +11,6 @@ branches:
     - trying.tmp
     - staging.tmp
 
-cache:
-  directories:
-    - $HOME/.cargo
-before_cache:
-  - cargo install cargo-cache --debug
-  - find $HOME/.cargo/bin/ ! -type d -exec strip {} \;
-  - cargo cache --autoclean
-
 env:
   global:
     - RUST_BACKTRACE=1
