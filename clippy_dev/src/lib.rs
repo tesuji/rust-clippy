@@ -6,7 +6,6 @@ use regex::Regex;
 use std::collections::HashMap;
 use std::ffi::OsStr;
 use std::fs;
-use std::io::prelude::*;
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
@@ -31,8 +30,9 @@ lazy_static! {
     )
     .unwrap();
     static ref NL_ESCAPE_RE: Regex = Regex::new(r#"\\\n\s*"#).unwrap();
-    pub static ref DOCS_LINK: String = "https://rust-lang.github.io/rust-clippy/master/index.html".to_string();
 }
+
+pub static DOCS_LINK: &str = "https://rust-lang.github.io/rust-clippy/master/index.html";
 
 /// Lint data parsed from the Clippy source code.
 #[derive(Clone, PartialEq, Debug)]
@@ -223,11 +223,10 @@ pub struct FileChange {
 /// `path` is the relative path to the file on which you want to perform the replacement.
 ///
 /// See `replace_region_in_text` for documentation of the other options.
-#[allow(clippy::expect_fun_call)]
 pub fn replace_region_in_file<F>(
     path: &Path,
-    start: &str,
-    end: &str,
+    start: &Regex,
+    end: &Regex,
     replace_start: bool,
     write_back: bool,
     replacements: F,
@@ -239,7 +238,7 @@ where
     let file_change = replace_region_in_text(&contents, start, end, replace_start, replacements);
 
     if write_back {
-        if let Err(e) = fs::write(path, file_change.new_lines) {
+        if let Err(e) = fs::write(path, file_change.new_lines.as_bytes()) {
             panic!("Cannot write to {}: {}", path.display(), e);
         }
     }
@@ -263,32 +262,41 @@ where
 /// # Example
 ///
 /// ```
+/// # use regex::Regex;
 /// let the_text = "replace_start\nsome text\nthat will be replaced\nreplace_end";
-/// let result = clippy_dev::replace_region_in_text(the_text, r#"replace_start"#, r#"replace_end"#, false, || {
-///     vec!["a different".to_string(), "text".to_string()]
-/// })
-/// .new_lines;
+/// let result = clippy_dev::replace_region_in_text(
+///     the_text,
+///     &Regex::new(r#"replace_start"#).unwrap(),
+///     &Regex::new(r#"replace_end"#).unwrap(),
+///     false,
+///     || vec!["a different".to_string(), "text".to_string()],
+/// ).new_lines;
 /// assert_eq!("replace_start\na different\ntext\nreplace_end", result);
 /// ```
-pub fn replace_region_in_text<F>(text: &str, start: &str, end: &str, replace_start: bool, replacements: F) -> FileChange
+pub fn replace_region_in_text<F>(
+    text: &str,
+    start: &Regex,
+    end: &Regex,
+    replace_start: bool,
+    replacements: F,
+) -> FileChange
 where
     F: Fn() -> Vec<String>,
 {
-    let lines = text.lines();
+    let replace_it = replacements();
+
     let mut in_old_region = false;
     let mut found = false;
     let mut new_lines = vec![];
-    let start = Regex::new(start).unwrap();
-    let end = Regex::new(end).unwrap();
 
-    for line in lines.clone() {
+    for line in text.lines() {
         if in_old_region {
-            if end.is_match(&line) {
+            if end.is_match(line) {
                 in_old_region = false;
-                new_lines.extend(replacements());
+                new_lines.extend(replace_it.clone());
                 new_lines.push(line.to_string());
             }
-        } else if start.is_match(&line) {
+        } else if start.is_match(line) {
             if !replace_start {
                 new_lines.push(line.to_string());
             }
@@ -306,10 +314,12 @@ where
         eprintln!("error: regex `{:?}` not found. You may have to update it.", start);
     }
 
-    FileChange {
-        changed: lines.ne(new_lines.clone()),
-        new_lines: new_lines.join("\n"),
+    let mut new_lines = new_lines.join("\n");
+    if text.ends_with('\n') {
+        new_lines.push('\n');
     }
+    let changed = new_lines != text;
+    FileChange { changed, new_lines }
 }
 
 /// Returns the path to the Clippy project directory
@@ -373,6 +383,13 @@ declare_deprecated_lint! {
     assert_eq!(expected, result);
 }
 
+#[macro_export]
+macro_rules! regex {
+    ($re:expr) => {
+        ::regex::Regex::new($re).unwrap()
+    };
+}
+
 #[test]
 fn test_replace_region() {
     let text = "\nabc\n123\n789\ndef\nghi";
@@ -380,7 +397,7 @@ fn test_replace_region() {
         changed: true,
         new_lines: "\nabc\nhello world\ndef\nghi".to_string(),
     };
-    let result = replace_region_in_text(text, r#"^\s*abc$"#, r#"^\s*def"#, false, || {
+    let result = replace_region_in_text(text, &regex!(r#"^\s*abc$"#), &regex!(r#"^\s*def"#), false, || {
         vec!["hello world".to_string()]
     });
     assert_eq!(expected, result);
@@ -393,7 +410,7 @@ fn test_replace_region_with_start() {
         changed: true,
         new_lines: "\nhello world\ndef\nghi".to_string(),
     };
-    let result = replace_region_in_text(text, r#"^\s*abc$"#, r#"^\s*def"#, true, || {
+    let result = replace_region_in_text(text, &regex!(r#"^\s*abc$"#), &regex!(r#"^\s*def"#), true, || {
         vec!["hello world".to_string()]
     });
     assert_eq!(expected, result);
@@ -406,7 +423,7 @@ fn test_replace_region_no_changes() {
         changed: false,
         new_lines: "123\n456\n789".to_string(),
     };
-    let result = replace_region_in_text(text, r#"^\s*123$"#, r#"^\s*456"#, false, || vec![]);
+    let result = replace_region_in_text(text, &regex!(r#"^\s*123$"#), &regex!(r#"^\s*456"#), false, || vec![]);
     assert_eq!(expected, result);
 }
 
