@@ -51,8 +51,7 @@ impl BuildInfo {
     // as we'll get a duplicate matching versions. Instead, disambiguate with
     // `--extern dep=path`.
     // See https://github.com/rust-lang/rust-clippy/issues/4015.
-    pub fn third_party_crates() -> Vec<(&'static str, PathBuf)> {
-        const THIRD_PARTY_CRATES: [&str; 4] = ["serde", "serde_derive", "regex", "clippy_lints"];
+    pub fn third_party_crates() -> Vec<(String, PathBuf)> {
         let cargo = env::var_os("CARGO");
         let cargo = cargo.as_deref().unwrap_or_else(|| OsStr::new("cargo"));
         let output = Command::new(cargo)
@@ -62,11 +61,11 @@ impl BuildInfo {
             .output()
             .unwrap();
 
-        let mut crates = Vec::with_capacity(THIRD_PARTY_CRATES.len());
+        let mut crates = Vec::new();
         for message in cargo_metadata::parse_messages(output.stdout.as_slice()) {
             if let CompilerArtifact(mut artifact) = message.unwrap() {
-                if let Some(&krate) = THIRD_PARTY_CRATES.iter().find(|&&krate| krate == artifact.target.name) {
-                    crates.push((krate, mem::take(&mut artifact.filenames[0])));
+                if ["lib"] == artifact.target.kind().as_slice() {
+                    crates.push((artifact.target.name, mem::take(&mut artifact.filenames[0])));
                 }
             }
         }

@@ -56,7 +56,6 @@ fn default_config() -> compiletest::Config {
         build_info.host_lib().join("test_build_base")
     };
     config.rustc_path = build_info.clippy_driver_path();
-    config.clean_rmeta();
     config
 }
 
