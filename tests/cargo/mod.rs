@@ -64,7 +64,7 @@ impl BuildInfo {
         let mut crates = Vec::new();
         for message in cargo_metadata::parse_messages(output.stdout.as_slice()) {
             if let CompilerArtifact(mut artifact) = message.unwrap() {
-                if ["lib"] == artifact.target.kind().as_slice() {
+                if ["lib"] == artifact.target.kind.as_slice() {
                     crates.push((artifact.target.name, mem::take(&mut artifact.filenames[0])));
                 }
             }
