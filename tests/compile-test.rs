@@ -44,7 +44,7 @@ fn default_config() -> compiletest::Config {
         "-L {0} -L {1} -Dwarnings -Zui-testing {2}",
         build_info.host_lib().join("deps").display(),
         build_info.target_lib().join("deps").display(),
-        disambiguated.join(" ")
+        dbg!(disambiguated.join(" "))
     ));
 
     config.build_base = if rustc_test_suite().is_some() {
