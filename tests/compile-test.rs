@@ -59,7 +59,7 @@ lazy_static! {
 
         crates.into_iter().map(|dep, path| format!("--extern {}={}", dep, path.display()))
             .join(" ")
-    }
+    };
 }
 
 fn default_config() -> compiletest::Config {
