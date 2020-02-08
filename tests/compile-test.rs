@@ -12,23 +12,23 @@ use std::path::{Path, PathBuf};
 
 mod cargo;
 
+fn host_lib() -> PathBuf {
+    if let Some(path) = option_env!("HOST_LIBS") {
+        PathBuf::from(path)
+    } else {
+        CARGO_TARGET_DIR.join(env!("PROFILE"))
+    }
+}
+
+fn clippy_driver_path() -> PathBuf {
+    if let Some(path) = option_env!("CLIPPY_DRIVER_PATH") {
+        PathBuf::from(path)
+    } else {
+        cargo::TARGET_LIB.join("clippy-driver")
+    }
+}
+
 lazy_static! {
-    static ref CLIPPY_DRIVER_PATH: PathBuf = {
-        if let Some(path) = option_env!("CLIPPY_DRIVER_PATH") {
-            PathBuf::from(path)
-        } else {
-            cargo::TARGET_LIB.join("clippy-driver")
-        }
-    };
-
-    static ref HOST_LIB: PathBuf = {
-        if let Some(path) = option_env!("HOST_LIBS") {
-            PathBuf::from(path)
-        } else {
-            CARGO_TARGET_DIR.join(env!("PROFILE"))
-        }
-    };
-
     // When we'll want to use `extern crate ..` for a dependency that is used
     // both by the crate and the compiler itself, we can't simply pass -L flags
     // as we'll get a duplicate matching versions. Instead, disambiguate with
@@ -63,7 +63,6 @@ lazy_static! {
 }
 
 fn default_config() -> compiletest::Config {
-    let build_info = cargo::BuildInfo::new();
     let mut config = compiletest::Config::default();
 
     if let Ok(name) = env::var("TESTNAME") {
@@ -76,20 +75,15 @@ fn default_config() -> compiletest::Config {
         config.compile_lib_path = path;
     }
 
-    let disambiguated: Vec<_> = cargo::BuildInfo::third_party_crates()
-        .iter()
-        .map(|(krate, path)| format!("--extern {}={}", krate, path.display()))
-        .collect();
-
     config.target_rustcflags = Some(format!(
         "-L {0} -L {1} -Dwarnings -Zui-testing {2}",
-        build_info.host_lib().join("deps").display(),
-        build_info.target_lib().join("deps").display(),
-        dbg!(disambiguated.join(" "))
+        host_lib().join("deps").display(),
+        cargo::TARGET_LIB.join("deps").display(),
+        THIRD_PARTY_CRATES,
     ));
 
-    config.build_base = build_info.host_lib().join("test_build_base");
-    config.rustc_path = build_info.clippy_driver_path();
+    config.build_base = host_lib().join("test_build_base");
+    config.rustc_path = CLIPPY_DRIVER_PATH;
     config
 }
 
