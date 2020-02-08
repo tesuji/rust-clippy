@@ -49,7 +49,7 @@ lazy_static! {
                 for dep in &CRATES {
                     if name.starts_with(&format!("lib{}-", dep)) && name.ends_with(".rlib") {
                         match crates.entry(dep) {
-                            Vacant(entry) => entry.insert(path);
+                            Vacant(entry) => {entry.insert(path);}
                             _ => break,
                         }
                     }
@@ -57,7 +57,7 @@ lazy_static! {
             }
         }
 
-        let v: Vec<_> = crates.into_iter().map(|(dep, path)| format!("--extern {}={}", dep, path.display()));
+        let v: Vec<_> = crates.into_iter().map(|(dep, path)| format!("--extern {}={}", dep, path.display())).collect();
         v.join(" ")
     };
 }
