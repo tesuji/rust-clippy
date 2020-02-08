@@ -46,7 +46,7 @@ lazy_static! {
                 _ => continue,
             };
             if let Some(name) = path.file_name().and_then(OsStr::to_str) {
-                for dep in &CRATES {
+                for dep in CRATES {
                     if name.starts_with(&format!("lib{}-", dep)) && name.ends_with(".rlib") {
                         if let Vacant(entry) = crates.entry(dep) {
                              entry.insert(path);
