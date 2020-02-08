@@ -7,6 +7,11 @@ use std::process::Command;
 
 mod cargo;
 
+#[must_use]
+fn is_rustc_test_suite() -> bool {
+    option_env!("RUSTC_TEST_SUITE").is_some()
+}
+
 lazy_static! {
     static ref CLIPPY_PATH: PathBuf = cargo::TARGET_LIB.join("cargo-clippy");
 }

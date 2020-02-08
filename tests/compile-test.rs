@@ -62,11 +62,6 @@ lazy_static! {
     }
 }
 
-#[must_use]
-fn rustc_lib_path() -> PathBuf {
-    env!("RUSTC_LIB_PATH").into()
-}
-
 fn default_config() -> compiletest::Config {
     let build_info = cargo::BuildInfo::new();
     let mut config = compiletest::Config::default();
@@ -75,8 +70,7 @@ fn default_config() -> compiletest::Config {
         config.filter = Some(name);
     }
 
-    if cargo::is_rustc_test_suite() {
-        let path = rustc_lib_path();
+    if let Some(path) = option_env!("RUSTC_LIB_PATH") {
         config.run_lib_path = path.clone();
         config.compile_lib_path = path;
     }
