@@ -87,14 +87,7 @@ fn default_config() -> compiletest::Config {
         dbg!(disambiguated.join(" "))
     ));
 
-    config.build_base = if cargo::is_rustc_test_suite() {
-        // we don't need access to the stderr files on travis
-        let mut path = PathBuf::from(env!("OUT_DIR"));
-        path.push("test_build_base");
-        path
-    } else {
-        build_info.host_lib().join("test_build_base")
-    };
+    config.build_base = build_info.host_lib().join("test_build_base");
     config.rustc_path = build_info.clippy_driver_path();
     config
 }
