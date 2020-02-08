@@ -19,7 +19,7 @@ lazy_static! {
 #[test]
 fn dogfood_clippy() {
     // run clippy on itself and fail the test if lint warnings are reported
-    if cargo::is_rustc_test_suite() {
+    if is_rustc_test_suite() {
         return;
     }
     let root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -48,7 +48,7 @@ fn dogfood_clippy() {
 #[test]
 fn dogfood_subprojects() {
     // run clippy on remaining subprojects and fail the test if lint warnings are reported
-    if cargo::is_rustc_test_suite() {
+    if is_rustc_test_suite() {
         return;
     }
     let root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
