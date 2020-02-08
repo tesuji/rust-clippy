@@ -1,3 +1,6 @@
+// Dogfood cannot run on Windows
+#![cfg(not(windows))]
+
 use lazy_static::lazy_static;
 use std::path::PathBuf;
 use std::process::Command;
@@ -15,7 +18,7 @@ lazy_static! {
 #[test]
 fn dogfood_clippy() {
     // run clippy on itself and fail the test if lint warnings are reported
-    if option_env!("RUSTC_TEST_SUITE").is_some() || cfg!(windows) {
+    if option_env!("RUSTC_TEST_SUITE").is_some() {
         return;
     }
     let root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -44,7 +47,7 @@ fn dogfood_clippy() {
 #[test]
 fn dogfood_subprojects() {
     // run clippy on remaining subprojects and fail the test if lint warnings are reported
-    if option_env!("RUSTC_TEST_SUITE").is_some() || cfg!(windows) {
+    if option_env!("RUSTC_TEST_SUITE").is_some() {
         return;
     }
     let root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
