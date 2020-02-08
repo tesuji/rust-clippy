@@ -1,7 +1,8 @@
-#![feature(test)]
+#![feature(test)] // compiletest_rs requires this attribute
 
 use compiletest_rs as compiletest;
 use compiletest_rs::common::Mode as TestMode;
+use lazy_static::lazy_static;
 
 use std::env::{self, set_var};
 use std::ffi::OsStr;
@@ -11,14 +12,54 @@ use std::path::{Path, PathBuf};
 
 mod cargo;
 
-#[must_use]
-fn rustc_test_suite() -> Option<PathBuf> {
-    option_env!("RUSTC_TEST_SUITE").map(PathBuf::from)
+lazy_static! {
+    static ref CLIPPY_DRIVER_PATH: PathBuf = {
+        if let Some(path) = option_env!("CLIPPY_DRIVER_PATH") {
+            PathBuf::from(path)
+        } else {
+            cargo::TARGET_LIB.join("clippy-driver")
+        }
+    };
+
+    static ref HOST_LIB: PathBuf = {
+        if let Some(path) = option_env!("HOST_LIBS") {
+            PathBuf::from(path)
+        } else {
+            CARGO_TARGET_DIR.join(env!("PROFILE"))
+        }
+    };
+
+    static ref THIRD_PARTY_CRATES: String = {
+        use std::collections::HashMap;
+        use std::collections::hash_map::Entry::*;
+        static CRATES: [&str; 4] = ["serde", "serde_derive", "regex", "clippy_lints"];
+        let dep_dir = cargo::TARGET_LIB.join("deps");
+        let mut crates: HashMap<&str, PathBuf> = HashMap::with_capacity(CRATES.len());
+        for entry in fs::read_dir(dep_dir).unwrap() {
+            let path = match entry {
+                Ok(entry) => entry.path(),
+                _ => continue,
+            };
+            if let Some(name) = path.file_name().to_str() {
+                for dep in &CRATES {
+                    if name.starts_with(&format!("lib{}-", dep)) && name.ends_with(".rlib") {
+                        match crates.entry(dep) {
+                            Vacant(entry) => entry.insert(path),
+                            _ => break,
+                        }
+                    }
+                }
+            }
+        }
+
+        crates.into_iter().map(|dep, path| format!("--extern {}={}", dep, path.display()))
+            .join(" ")
+    }
 }
 
 #[must_use]
 fn rustc_lib_path() -> PathBuf {
-    option_env!("RUSTC_LIB_PATH").unwrap().into()
+    env!("RUSTC_LIB_PATH").into()
 }
 
 fn default_config() -> compiletest::Config {
@@ -29,7 +70,7 @@ fn default_config() -> compiletest::Config {
         config.filter = Some(name);
     }
 
-    if rustc_test_suite().is_some() {
+    if cargo::is_rustc_test_suite() {
         let path = rustc_lib_path();
         config.run_lib_path = path.clone();
         config.compile_lib_path = path;
@@ -47,7 +88,7 @@ fn default_config() -> compiletest::Config {
         dbg!(disambiguated.join(" "))
     ));
 
-    config.build_base = if rustc_test_suite().is_some() {
+    config.build_base = if cargo::is_rustc_test_suite() {
         // we don't need access to the stderr files on travis
         let mut path = PathBuf::from(env!("OUT_DIR"));
         path.push("test_build_base");
