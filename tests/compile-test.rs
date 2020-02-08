@@ -48,10 +48,10 @@ lazy_static! {
             if let Some(name) = path.file_name().and_then(OsStr::to_str) {
                 for dep in &CRATES {
                     if name.starts_with(&format!("lib{}-", dep)) && name.ends_with(".rlib") {
-                        match crates.entry(dep) {
-                            Vacant(entry) => {entry.insert(path);}
-                            _ => break,
+                        if let Vacant(entry) = crates.entry(dep) {
+                             entry.insert(path);
                         }
+                        break;
                     }
                 }
             }
