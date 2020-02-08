@@ -3,7 +3,7 @@ use std::env;
 use std::path::PathBuf;
 
 lazy_static! {
-    static ref CARGO_TARGET_DIR: PathBuf = {
+    pub static ref CARGO_TARGET_DIR: PathBuf = {
         match env::var_os("CARGO_TARGET_DIR") {
             Some(v) => v.into(),
             None => "target".into(),
