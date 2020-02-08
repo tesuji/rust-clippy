@@ -57,8 +57,8 @@ lazy_static! {
             }
         }
 
-        crates.into_iter().map(|(dep, path)| format!("--extern {}={}", dep, path.display()))
-            .join(" ")
+        let v: Vec<_> = crates.into_iter().map(|(dep, path)| format!("--extern {}={}", dep, path.display()));
+        v.join(" ")
     };
 }
 
