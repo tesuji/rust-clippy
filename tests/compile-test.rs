@@ -45,7 +45,7 @@ lazy_static! {
                 Ok(entry) => entry.path(),
                 _ => continue,
             };
-            if let Some(name) = path.file_name().to_str() {
+            if let Some(name) = path.file_name().and_then(OsStr::to_str) {
                 for dep in &CRATES {
                     if name.starts_with(&format!("lib{}-", dep)) && name.ends_with(".rlib") {
                         match crates.entry(dep) {
