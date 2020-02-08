@@ -71,6 +71,7 @@ fn default_config() -> compiletest::Config {
     }
 
     if let Some(path) = option_env!("RUSTC_LIB_PATH") {
+        let path = PathBuf::from(path);
         config.run_lib_path = path.clone();
         config.compile_lib_path = path;
     }
