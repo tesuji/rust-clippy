@@ -37,7 +37,7 @@ lazy_static! {
     static ref THIRD_PARTY_CRATES: String = {
         use std::collections::HashMap;
         use std::collections::hash_map::Entry::*;
-        static CRATES: &[&str] = ["serde", "serde_derive", "derive_new", "regex", "clippy_lints"];
+        static CRATES: &[&str] = &["serde", "serde_derive", "derive_new", "regex", "clippy_lints"];
         let dep_dir = cargo::TARGET_LIB.join("deps");
         let mut crates: HashMap<&str, PathBuf> = HashMap::with_capacity(CRATES.len());
         for entry in fs::read_dir(dep_dir).unwrap() {
