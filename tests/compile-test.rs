@@ -16,7 +16,7 @@ fn host_lib() -> PathBuf {
     if let Some(path) = option_env!("HOST_LIBS") {
         PathBuf::from(path)
     } else {
-        CARGO_TARGET_DIR.join(env!("PROFILE"))
+        cargo::CARGO_TARGET_DIR.join(env!("PROFILE"))
     }
 }
 
