@@ -79,11 +79,11 @@ fn default_config() -> compiletest::Config {
         "-L {0} -L {1} -Dwarnings -Zui-testing {2}",
         host_lib().join("deps").display(),
         cargo::TARGET_LIB.join("deps").display(),
-        THIRD_PARTY_CRATES,
+        &*THIRD_PARTY_CRATES,
     ));
 
     config.build_base = host_lib().join("test_build_base");
-    config.rustc_path = CLIPPY_DRIVER_PATH;
+    config.rustc_path = clippy_driver_path();
     config
 }
 
