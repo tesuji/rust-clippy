@@ -29,6 +29,11 @@ lazy_static! {
         }
     };
 
+    // When we'll want to use `extern crate ..` for a dependency that is used
+    // both by the crate and the compiler itself, we can't simply pass -L flags
+    // as we'll get a duplicate matching versions. Instead, disambiguate with
+    // `--extern dep=path`.
+    // See https://github.com/rust-lang/rust-clippy/issues/4015.
     static ref THIRD_PARTY_CRATES: String = {
         use std::collections::HashMap;
         use std::collections::hash_map::Entry::*;
