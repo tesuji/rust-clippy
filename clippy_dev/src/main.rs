@@ -79,7 +79,7 @@ fn main() {
         DevCommand::Deprecate { name, reason } => update_lints::deprecate(&name, reason.as_deref()),
         DevCommand::Completions { shell } => {
             let mut cmd = <Dev as clap::CommandFactory>::command();
-            let cmd_name = cmd.get_name().to_string();
+            let cmd_name = "cargo-dev";
             eprintln!("Generating completion file for {shell:?}...");
             generate(shell, &mut cmd, cmd_name, &mut io::stdout());
         },
