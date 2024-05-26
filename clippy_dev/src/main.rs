@@ -3,8 +3,10 @@
 #![warn(rust_2018_idioms, unused_lifetimes)]
 
 use clap::{Args, Parser, Subcommand};
+use clap_complete::{generate, Shell};
 use clippy_dev::{dogfood, fmt, lint, new_lint, serve, setup, update_lints};
 use std::convert::Infallible;
+use std::io;
 
 fn main() {
     let dev = Dev::parse();
@@ -75,6 +77,12 @@ fn main() {
             uplift,
         } => update_lints::rename(&old_name, new_name.as_ref().unwrap_or(&old_name), uplift),
         DevCommand::Deprecate { name, reason } => update_lints::deprecate(&name, reason.as_deref()),
+        DevCommand::Completions { shell } => {
+            let mut cmd = <Dev as clap::CommandFactory>::command();
+            let cmd_name = "cargo-dev";
+            eprintln!("Generating completion file for {shell:?}...");
+            generate(shell, &mut cmd, cmd_name, &mut io::stdout());
+        },
     }
 }
 
@@ -224,6 +232,13 @@ enum DevCommand {
         #[arg(long, short)]
         /// The reason for deprecation
         reason: Option<String>,
+    },
+    #[command(name = "completions")]
+    /// Generate tab-completion scripts for your shell
+    Completions {
+        /// Name of command-line shell
+        #[arg(short, long, value_enum, default_value = "bash")]
+        shell: Shell,
     },
 }
 
