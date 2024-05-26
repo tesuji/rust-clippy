@@ -4,6 +4,11 @@ description = "Clippy developer tooling"
 version = "0.0.1"
 edition = "2021"
 
+[[bin]]
+name = "cargo-dev"
+test = false
+path = "src/main.rs"
+
 [dependencies]
 aho-corasick = "1.0"
 clap = { version = "4.4", features = ["derive"] }
