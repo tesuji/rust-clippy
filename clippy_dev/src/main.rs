@@ -78,10 +78,12 @@ fn main() {
         } => update_lints::rename(&old_name, new_name.as_ref().unwrap_or(&old_name), uplift),
         DevCommand::Deprecate { name, reason } => update_lints::deprecate(&name, reason.as_deref()),
         DevCommand::Completions { shell } => {
-            let mut cmd = <Dev as clap::CommandFactory>::command();
-            let cmd_name = "cargo-dev";
+            let mut cmd = clap::Command::new("cargo")
+                .disable_help_subcommand(true)
+                .disable_help_flag(true)
+                .subcommand(<Dev as clap::CommandFactory>::command());
             eprintln!("Generating completion file for {shell:?}...");
-            generate(shell, &mut cmd, cmd_name, &mut io::stdout());
+            generate(shell, &mut cmd, "cargo", &mut io::stdout());
         },
     }
 }
