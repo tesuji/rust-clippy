@@ -2,11 +2,28 @@
 // warn on lints, that are included in `rust-lang/rust`s bootstrap
 #![warn(rust_2018_idioms, unused_lifetimes)]
 
-use clap::{Args, Parser, Subcommand};
+use clap::{Arg, ArgAction, Args, Parser, Subcommand};
 use clap_complete::{generate, Shell};
 use clippy_dev::{dogfood, fmt, lint, new_lint, serve, setup, update_lints};
 use std::convert::Infallible;
 use std::io;
+
+mod cargo_cli_prelude {
+    use clap::{Arg, ArgAction};
+    pub fn flag(name: &'static str, help: &'static str) -> Arg {
+        Arg::new(name).long(name).help(help).action(ArgAction::SetTrue)
+    }
+
+    pub fn opt(name: &'static str, help: &'static str) -> Arg {
+        Arg::new(name).long(name).help(help).action(ArgAction::Set)
+    }
+
+    pub fn multi_opt(name: &'static str, value_name: &'static str, help: &'static str) -> Arg {
+        opt(name, help).value_name(value_name).action(ArgAction::Append)
+    }
+}
+
+use cargo_cli_prelude::{flag, multi_opt, opt};
 
 fn main() {
     let dev = Dev::parse();
@@ -79,8 +96,39 @@ fn main() {
         DevCommand::Deprecate { name, reason } => update_lints::deprecate(&name, reason.as_deref()),
         DevCommand::Completions { shell } => {
             let mut cmd = clap::Command::new("cargo")
+                .next_display_order(800)
+                .allow_external_subcommands(true)
                 .disable_help_subcommand(true)
                 .disable_help_flag(true)
+                .arg(flag("version", "Print version info and exit").short('V'))
+                .arg(flag("list", "List installed commands"))
+                .arg(opt("explain", "Provide a detailed explanation of a rustc error message").value_name("CODE"))
+                .arg(
+                    opt("verbose", "Use verbose output (-vv very verbose/build.rs output)")
+                        .short('v')
+                        .action(ArgAction::Count),
+                )
+                .arg(flag("quiet", "Do not print cargo log messages").short('q'))
+                .arg(opt("color", "Coloring: auto, always, never").value_name("WHEN"))
+                .arg(
+                    Arg::new("directory")
+                        .help("Change to DIRECTORY before doing anything (nightly-only)")
+                        .short('C')
+                        .value_name("DIRECTORY")
+                        .value_hint(clap::ValueHint::DirPath)
+                        .value_parser(clap::builder::ValueParser::path_buf()),
+                )
+                .arg(flag("locked", "Assert that `Cargo.lock` will remain unchanged"))
+                .arg(flag("offline", "Run without accessing the network"))
+                .arg(flag("frozen", "Equivalent to specifying both --locked and --offline"))
+                .arg(multi_opt("config", "KEY=VALUE", "Override a configuration value"))
+                .arg(
+                    Arg::new("unstable-features")
+                        .help("Unstable (nightly-only) flags to Cargo, see 'cargo -Z help' for details")
+                        .short('Z')
+                        .value_name("FLAG")
+                        .action(ArgAction::Append),
+                )
                 .subcommand(<Dev as clap::CommandFactory>::command());
             eprintln!("Generating completion file for {shell:?}...");
             generate(shell, &mut cmd, "cargo", &mut io::stdout());
